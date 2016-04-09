@@ -81,16 +81,22 @@ bucky = bz2.decompress(base64.b64decode(packedBucky))
 
 def drawBucky(screen, y, x):
     colorOffset = 4
-    colors = [
-        (  0,  0,  0),
-        ( 20, 17, 17),
-        (203,  3, 61),
-        (244,242,243),
-    ]
-    for i, color in enumerate(colors):
-        colorCurses = map(lambda x: int(x*1000./255), color)
-        curses.init_color(colorOffset+i, *colorCurses)
-        curses.init_pair(colorOffset+i, colorOffset+i, -1)
+    if curses.has_colors():
+        colors = [
+            (  0,  0,  0),
+            ( 20, 17, 17),
+            (203,  3, 61),
+            (244,242,243),
+        ]
+        for i, color in enumerate(colors):
+            colorCurses = map(lambda x: int(x*1000./255), color)
+            curses.init_color(colorOffset+i, *colorCurses)
+            curses.init_pair(colorOffset+i, colorOffset+i, -1)
+    else:
+        curses.init_pair(colorOffset+0, curses.COLOR_BLACK, -1)
+        curses.init_pair(colorOffset+1, curses.COLOR_BLACK, -1)
+        curses.init_pair(colorOffset+2, curses.COLOR_RED, -1)
+        curses.init_pair(colorOffset+3, curses.COLOR_WHITE, -1)
     for ix in range(79):
         for iy in range(36):
             char = bucky[(iy*79+ix)*2]
