@@ -17,6 +17,7 @@ colors = [
     (244,242,243),
 ]
 
+
 def bestColor(c):
     c = map(int, c)
     minDistance = 999
@@ -27,6 +28,7 @@ def bestColor(c):
             minDistance = dist
             bestColor = color+4
     return bestColor
+
 
 def drawBuckyGen(screen, y, x):
     buckyOut = open('bucky.py','w')
@@ -76,21 +78,25 @@ cKEhluS9ng==
 '''
 bucky = bz2.decompress(base64.b64decode(packedBucky))
 
+
 def drawBucky(screen, y, x):
+    colorOffset = 4
     colors = [
         (  0,  0,  0),
         ( 20, 17, 17),
         (203,  3, 61),
         (244,242,243),
     ]
-    colorOffset = 4
-    for i,color in enumerate(colors):
+    for i, color in enumerate(colors):
         colorCurses = map(lambda x: int(x*1000./255), color)
         curses.init_color(colorOffset+i, *colorCurses)
         curses.init_pair(colorOffset+i, colorOffset+i, -1)
     for ix in range(79):
         for iy in range(36):
-            screen.addch(y+iy, x+ix, bucky[(iy*79+ix)*2], curses.color_pair(colorOffset-4+ord(bucky[(iy*79+ix)*2+1])))
+            char = bucky[(iy*79+ix)*2]
+            color = colorOffset-4+ord(bucky[(iy*79+ix)*2+1])
+            screen.addch(y+iy, x+ix, char, curses.color_pair(color))
+
 
 def drawMain(screen):
     screen.clear()
@@ -99,11 +105,12 @@ def drawMain(screen):
 
     screen.addstr(2, 2, "Press q to quit")
 
-    if ymax > 38 and xmax > 100:
-        #drawBuckyGen(screen, ymax-2-35, xmax-2-79)
+    if ymax > 39 and xmax > 100:
+        # drawBuckyGen(screen, ymax-2-35, xmax-2-79)
         drawBucky(screen, ymax-2-35, xmax-2-79)
 
     screen.refresh()
+
 
 def startGui(screen, **kwargs):
     curses.use_default_colors()
@@ -114,14 +121,14 @@ def startGui(screen, **kwargs):
         cmd = screen.getch()
         if cmd == ord('q'):
             exit(0)
-        elif cmd == ord('l'):
-            listRecentKeys(screen, 5, 2)
         if curses.is_term_resized(*currentScreenDimension):
             currentScreenDimension = screen.getmaxyx()
             drawMain(screen)
 
+
 def main():
     curses.wrapper(startGui)
+
 
 if __name__ == '__main__':
     main()
