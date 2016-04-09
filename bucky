@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+import curses
+import re
+import math
+
+# Generation
+# ----------------------------------------
+
+# convert 231px-BuckyBadger.svg.png -dither None -colors 4 bucky.gif
+# http://manytools.org/hacker-tools/convert-images-to-ascii-art/
+# Settings: full color, invert, width 40 (somehow ends up 79 in their output)
+# convert  bucky.gif  -format %c  -depth 8  histogram:info:-
+colors = [
+    (  0,  0,  0),
+    ( 20, 17, 17),
+    (203,  3, 61),
+    (244,242,243),
+]
+
+def bestColor(c):
+    c = map(int, c)
+    minDistance = 999
+    bestColor = 4
+    for color, coord in enumerate(colors):
+        dist = math.sqrt(sum(map(lambda (x,y): (x-y)**2, zip(c,coord))))
+        if dist < minDistance:
+            minDistance = dist
+            bestColor = color+4
+    return bestColor
+
+def drawBuckyGen(screen, y, x):
+    buckyOut = open('bucky.py','w')
+    for i, color in enumerate(colors):
+        colorCurses = map(lambda x: int(x*1000./255), color)
+        curses.init_color(i+4, *colorCurses)
+        curses.init_pair(i+4, i+4, -1)
+    chars = re.compile(r'<span style="color:rgb\((\d*) , (\d*) , (\d*)\);">(.)</span>')
+    with open('bucky.html') as f:
+        img = re.findall(chars, f.read())
+    pixbuf = ""
+    chars = set()
+    for i,pix in enumerate(img):
+        ix = i%79
+        iy = i/79
+        best = bestColor(pix[0:3])
+        screen.addch(y+iy, x+ix, pix[3], curses.color_pair(best))
+        pixbuf += pix[3]+chr(best)
+    buckyOut.write("bucky = "+repr(pixbuf))
+
+
+# Result
+# ----------------------------------------
+
+import base64
+import bz2
+packedBucky = '''
+QlpoOTFBWSZTWctyXs8ABZxUAAeAS1XAAGAHHOERenrgcyBA1oo1gQAABqn+mpQB
+oJTyVU0YmgSZSVQPQghJVNGI0IAAHjG2xvnz66rpZRLmuUOdyMwukFjo27ow9E56
+JBdidOBNZARDIoxc5w9pKikuYRkU2jM3cioZLckGnYMvKoiihsWiUF4LkU1nSbbq
+wsM2ldsJok3KvYqheYgUXZRihkkbRkOEbnk3Mik4suuOXpeensvEKTtJlcNNm61w
+oiCKmUUVyi5RRQa5Th57okUTphTYsuyObdKkNSzZ3TM6S+H0io6qT42RrieEUUXR
+K5CQHlc9YokO+d2PR6OCz5DBJgU2UGQoGilqJaF+oA0DpVKCdlDEJ4aQhefIXJpK
+J8guJKtlwoTK3reReseY4Y+j9BrTG0EbEIO+UAgYEq1JMUiXd4jc5Qe3uleZ2XbT
+qVRqnlVrp3Sht1cim0dmEUR0ZwE8SKZ7DuQFAkVQuJhMxq5VaJ0VDGWrCSUVOzRp
+uZ7nZc6jEW1EsSaxTVqwz042c6dSKvGrY2uM7dJGiMRKhnsncoCjWbklNNBXHZer
+sPbuelLRd1PQ9BoTiHo4hmWg4tsUBqg6A4VCVOdlwpyKbVYejkmTc6cFR5ky7I8m
+0imCcCnnRSHQa0gaSjR3fP0B/oApdJpoaKDR8gEOgU6FXXSo6roEoA0JSroApA0o
+FKVoR0iaUA0ItUqOhR6XoR7YDo0otJ2nrA601RtmhK0gUpSjbUjTShVxgnshuZOO
+Y0h1CqI5QZsTsTiSmmZgUVR04hCYQFyhPJzwWMsVYrLpDKIbhwWFMc7ZQiIWdIpR
+DRKhJocBITi5Xna6U6YoqpWpAnQgCjU4gVHOkAraiM6rNTdUIkiowQ8j0TWhMSRy
+qhYECSXHUzMChFOy52KCoqVKQHSqU1iQymymMEkVVOJnCOVUakRYHMZdIrQLlVak
+y45FnA9GkWcEOFYjclQ5DuxLJTE0zVMQVWNJpNss4hahRiFKnK1rrbXRJOU4WiXr
+BwuEBdocAvdE5ZBXAnIKLBBWWyuoVnCAOuJOHtC8RrIC9w6AcRPITjEkgChIqIKT
+gXSBpXSHSvSBVLSnSRaWgSkaKEShKExIVVJpKoNCaHbNUhQEUSNAaWh0xNH+LuSK
+cKEhluS9ng==
+'''
+bucky = bz2.decompress(base64.b64decode(packedBucky))
+
+def drawBucky(screen, y, x):
+    colors = [
+        (  0,  0,  0),
+        ( 20, 17, 17),
+        (203,  3, 61),
+        (244,242,243),
+    ]
+    colorOffset = 4
+    for i,color in enumerate(colors):
+        colorCurses = map(lambda x: int(x*1000./255), color)
+        curses.init_color(colorOffset+i, *colorCurses)
+        curses.init_pair(colorOffset+i, colorOffset+i, -1)
+    for ix in range(79):
+        for iy in range(36):
+            screen.addch(y+iy, x+ix, bucky[(iy*79+ix)*2], curses.color_pair(colorOffset-4+ord(bucky[(iy*79+ix)*2+1])))
+
+def drawMain(screen):
+    screen.clear()
+    screen.border(0)
+    ymax, xmax = screen.getmaxyx()
+
+    screen.addstr(2, 2, "Press q to quit")
+
+    if ymax > 38 and xmax > 100:
+        #drawBuckyGen(screen, ymax-2-35, xmax-2-79)
+        drawBucky(screen, ymax-2-35, xmax-2-79)
+
+    screen.refresh()
+
+def startGui(screen, **kwargs):
+    curses.use_default_colors()
+    drawMain(screen)
+    currentScreenDimension = screen.getmaxyx()
+
+    while True:
+        cmd = screen.getch()
+        if cmd == ord('q'):
+            exit(0)
+        elif cmd == ord('l'):
+            listRecentKeys(screen, 5, 2)
+        if curses.is_term_resized(*currentScreenDimension):
+            currentScreenDimension = screen.getmaxyx()
+            drawMain(screen)
+
+def main():
+    curses.wrapper(startGui)
+
+if __name__ == '__main__':
+    main()
